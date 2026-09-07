@@ -5,6 +5,13 @@
         <p class="intro">A quick look at the newest stories.</p>
     </header>
 
+    @if (locationDenied) {
+    <section class="location-state error-message" aria-live="polite">
+        <h2>Location access is required</h2>
+        <p>{{ errorMessage }}</p>
+        <small>Allow location access in your browser settings and reload this page to see local headlines.</small>
+    </section>
+    } @else {
     <section class="headlines" aria-label="Latest headlines" aria-live="polite">
         @if (isLoadingHeadlines) {
         <p class="location-state">Loading headlines...</p>
@@ -19,8 +26,6 @@
         </article>
         } }
     </section>
-
-    @if (errorMessage) {
-    <p class="location-note">Location sharing is unavailable, but you can still read the headlines.</p>
     }
+
 </div>

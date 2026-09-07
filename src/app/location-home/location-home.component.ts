@@ -12,6 +12,7 @@ export class LocationHomeComponent implements OnDestroy {
   headlines: Headline[] = [];
   isLoadingHeadlines = true;
   headlinesError = false;
+  locationDenied = false;
   errorMessage: string | null = null;
   private headlinesLoaded = false;
   private positionWatchId: number | null = null;
@@ -49,6 +50,8 @@ export class LocationHomeComponent implements OnDestroy {
       },
       (error) => {
         this.errorMessage = error;
+        this.locationDenied = true;
+        this.isLoadingHeadlines = false;
         if (!this.headlinesLoaded) {
           this.headlinesLoaded = true;
           this.loadHeadlines();
