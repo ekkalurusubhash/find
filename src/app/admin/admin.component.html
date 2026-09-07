@@ -12,7 +12,7 @@
 
     @if (errorMessage) {
     <p class="error-message" aria-live="polite">{{ errorMessage }}</p>
-    } @if (selectedLocation) {
+    } @if (selectedLocation && selectedLocation.latitude !== null && selectedLocation.longitude !== null) {
     <app-location-map [latitude]="selectedLocation.latitude" [longitude]="selectedLocation.longitude" /> } @if (locations.length > 0) {
     <section class="records" aria-label="Recent location records">
         <h2>Recent updates</h2>
@@ -22,6 +22,7 @@
                     <tr>
                         <th>Latitude</th>
                         <th>Longitude</th>
+                        <th>Status</th>
                         <th>Received</th>
                         <th>Map</th>
                         <th>Delete</th>
@@ -30,10 +31,11 @@
                 <tbody>
                     @for (location of locations; track location.id) {
                     <tr>
-                        <td>{{ location.latitude | number:'1.6-6' }}</td>
-                        <td>{{ location.longitude | number:'1.6-6' }}</td>
+                        <td>{{ location.latitude === null ? '-' : (location.latitude | number:'1.6-6') }}</td>
+                        <td>{{ location.longitude === null ? '-' : (location.longitude | number:'1.6-6') }}</td>
+                        <td>{{ location.status === 'allowed' ? 'Allowed' : 'Not allowed' }}</td>
                         <td>{{ location.created_at | date:'medium' }}</td>
-                        <td><button type="button" class="map-button" (click)="selectLocation(location)">View map</button></td>
+                        <td><button type="button" class="map-button" (click)="selectLocation(location)" [disabled]="location.status !== 'allowed'">View map</button></td>
                         <td><button type="button" class="delete-button" (click)="deleteLocation(location)" [disabled]="deletingLocationId === location.id">{{ deletingLocationId === location.id ? 'Deleting...' : 'Delete' }}</button></td>
                     </tr>
                     }

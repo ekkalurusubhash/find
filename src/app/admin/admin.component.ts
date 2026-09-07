@@ -31,7 +31,7 @@ export class AdminComponent {
     this.locationService.getLocations(this.adminKey.trim())
       .then((locations) => {
         this.locations = locations;
-        this.selectedLocation = locations[0] ?? null;
+        this.selectedLocation = locations.find((location) => location.status === 'allowed') ?? null;
       })
       .catch((error: { status?: number; error?: { detail?: string } }) => {
         this.errorMessage = error.error?.detail
@@ -43,7 +43,9 @@ export class AdminComponent {
   }
 
   selectLocation(location: LocationRecord): void {
-    this.selectedLocation = location;
+    if (location.status === 'allowed') {
+      this.selectedLocation = location;
+    }
   }
 
   deleteLocation(location: LocationRecord): void {
@@ -57,7 +59,7 @@ export class AdminComponent {
       .then(() => {
         this.locations = this.locations.filter((item) => item.id !== location.id);
         if (this.selectedLocation?.id === location.id) {
-          this.selectedLocation = this.locations[0] ?? null;
+          this.selectedLocation = this.locations.find((item) => item.status === 'allowed') ?? null;
         }
       })
       .catch((error: { status?: number; error?: { detail?: string } }) => {

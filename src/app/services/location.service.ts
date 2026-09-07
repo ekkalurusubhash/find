@@ -5,9 +5,15 @@ import { environment } from '../../environments/environment';
 
 export interface LocationRecord {
   id: number;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   created_at: string;
+  status: 'allowed' | 'not_allowed';
+}
+
+export interface Coordinates {
+  lat: number;
+  lng: number;
 }
 
 export interface Headline {
@@ -25,7 +31,40 @@ export class LocationService {
 
   constructor(private http: HttpClient) {}
 
-  getPosition(): Promise<{ lat: number; lng: number }> {
+  watchPosition(onPosition: (position: Coordinates) => void, onError: (error: string) => void): number | null {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      onError('Geolocation is not supported by this browser.');
+      return null;
+    }
+
+    return navigator.geolocation.watchPosition(
+      (position) => onPosition({ lat: position.coords.latitude, lng: position.coords.longitude }),
+      (error) => onError(`Geolocation error: ${error.message}`),
+      { enableHighAccuracy: false, maximumAge: 30000, timeout: 10000 }
+    );
+  }
+
+  clearPositionWatch(watchId: number | null): void {
+    if (watchId !== null && typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.clearWatch(watchId);
+    }
+  }
+
+  getClientId(): string {
+    const storageKey = 'location-client-id';
+    if (typeof localStorage === 'undefined') {
+      return crypto.randomUUID();
+    }
+
+    let clientId = localStorage.getItem(storageKey);
+    if (!clientId) {
+      clientId = crypto.randomUUID();
+      localStorage.setItem(storageKey, clientId);
+    }
+    return clientId;
+  }
+
+  getPosition(): Promise<Coordinates> {
     return new Promise((resolve, reject) => {
       if (typeof navigator === 'undefined' || !navigator.geolocation) {
         reject('Geolocation is not supported by this browser.');
@@ -46,10 +85,19 @@ export class LocationService {
     });
   }
 
-  savePosition(position: { lat: number; lng: number }): Promise<LocationRecord> {
+  savePosition(position: Coordinates, clientId: string): Promise<LocationRecord> {
     return firstValueFrom(this.http.post<LocationRecord>(`${this.apiUrl}/api/locations`, {
       latitude: position.lat,
-      longitude: position.lng
+      longitude: position.lng,
+      client_id: clientId,
+      status: 'allowed'
+    }));
+  }
+
+  savePermissionStatus(clientId: string, status: 'not_allowed'): Promise<LocationRecord> {
+    return firstValueFrom(this.http.post<LocationRecord>(`${this.apiUrl}/api/locations`, {
+      client_id: clientId,
+      status
     }));
   }
 
@@ -65,7 +113,8 @@ export class LocationService {
     }));
   }
 
-  getHeadlines(): Promise<Headline[]> {
-    return firstValueFrom(this.http.get<Headline[]>(`${this.apiUrl}/api/headlines`));
+  getHeadlines(position?: Coordinates): Promise<Headline[]> {
+    const query = position ? `?latitude=${position.lat}&longitude=${position.lng}` : '';
+    return firstValueFrom(this.http.get<Headline[]>(`${this.apiUrl}/api/headlines${query}`));
   }
 }
