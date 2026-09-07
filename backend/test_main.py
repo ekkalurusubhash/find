@@ -48,3 +48,16 @@ def test_create_and_list_location() -> None:
 def test_list_requires_admin_key() -> None:
     response = client.get("/api/locations")
     assert response.status_code == 401
+
+
+def test_headlines_are_public(monkeypatch) -> None:
+    monkeypatch.setenv(
+        "HEADLINES_JSON",
+        '[{"title":"A new story","source":"Local desk","url":"https://example.com/story",'
+        '"published_at":"2026-09-07T10:00:00+00:00"}]',
+    )
+
+    response = client.get("/api/headlines")
+
+    assert response.status_code == 200
+    assert response.json()[0]["title"] == "A new story"

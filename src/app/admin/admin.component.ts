@@ -13,6 +13,7 @@ import { LocationRecord, LocationService } from '../services/location.service';
 export class AdminComponent {
   adminKey = '';
   locations: LocationRecord[] = [];
+  selectedLocation: LocationRecord | null = null;
   errorMessage: string | null = null;
   isLoading = false;
 
@@ -29,6 +30,7 @@ export class AdminComponent {
     this.locationService.getLocations(this.adminKey.trim())
       .then((locations) => {
         this.locations = locations;
+        this.selectedLocation = locations[0] ?? null;
       })
       .catch(() => {
         this.errorMessage = 'Unable to load locations. Check the admin key and API connection.';
@@ -38,7 +40,8 @@ export class AdminComponent {
       });
   }
 
-  get latestLocation(): LocationRecord | null {
-    return this.locations[0] ?? null;
+  selectLocation(location: LocationRecord): void {
+    this.selectedLocation = location;
   }
+
 }

@@ -10,6 +10,13 @@ export interface LocationRecord {
   created_at: string;
 }
 
+export interface Headline {
+  title: string;
+  source: string;
+  url: string;
+  published_at: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -50,5 +57,9 @@ export class LocationService {
     return firstValueFrom(this.http.get<LocationRecord[]>(`${this.apiUrl}/api/locations`, {
       headers: { 'X-Admin-Key': adminKey }
     }));
+  }
+
+  getHeadlines(): Promise<Headline[]> {
+    return firstValueFrom(this.http.get<Headline[]>(`${this.apiUrl}/api/headlines`));
   }
 }

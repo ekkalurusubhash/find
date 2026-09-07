@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import json
 from pathlib import Path
 import os
 import sqlite3
@@ -40,6 +41,13 @@ class LocationCreate(BaseModel):
 class LocationRecord(LocationCreate):
     id: int
     created_at: datetime
+
+
+class Headline(BaseModel):
+    title: str
+    source: str
+    url: str
+    published_at: datetime
 
 
 def get_connection() -> sqlite3.Connection:
@@ -125,3 +133,17 @@ def list_locations(limit: int = Query(default=100, ge=1, le=500)) -> list[Locati
         ).fetchall()
 
     return [LocationRecord(**dict(row)) for row in rows]
+
+
+@app.get("/api/headlines", response_model=list[Headline])
+def list_headlines() -> list[Headline]:
+    configured_headlines = os.getenv("HEADLINES_JSON", "[]")
+    try:
+        headlines = json.loads(configured_headlines)
+    except json.JSONDecodeError as error:
+        raise HTTPException(status_code=500, detail="HEADLINES_JSON is not valid JSON.") from error
+
+    if not isinstance(headlines, list):
+        raise HTTPException(status_code=500, detail="HEADLINES_JSON must contain a list.")
+
+    return [Headline(**headline) for headline in headlines[:10]]

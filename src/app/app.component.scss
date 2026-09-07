@@ -30,6 +30,43 @@ h1 {
     font-size: 1.05rem;
 }
 
+.headlines {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.headline {
+    padding: 1.25rem 0;
+    border-top: 1px solid #d9e3e8;
+}
+
+.headline-source {
+    margin: 0 0 0.5rem;
+    color: #176b87;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.headline h2 {
+    margin: 0;
+    font-size: 1.35rem;
+}
+
+.headline a {
+    color: #172a3a;
+    text-decoration: none;
+}
+
+.headline a:hover {
+    color: #176b87;
+}
+
+.location-note {
+    color: #536575;
+    font-size: 0.85rem;
+}
+
 .location-summary {
     display: flex;
     align-items: end;
