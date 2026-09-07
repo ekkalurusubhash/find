@@ -24,6 +24,7 @@
                         <th>Longitude</th>
                         <th>Received</th>
                         <th>Map</th>
+                        <th>Delete</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -33,6 +34,7 @@
                         <td>{{ location.longitude | number:'1.6-6' }}</td>
                         <td>{{ location.created_at | date:'medium' }}</td>
                         <td><button type="button" class="map-button" (click)="selectLocation(location)">View map</button></td>
+                        <td><button type="button" class="delete-button" (click)="deleteLocation(location)" [disabled]="deletingLocationId === location.id">{{ deletingLocationId === location.id ? 'Deleting...' : 'Delete' }}</button></td>
                     </tr>
                     }
                 </tbody>

@@ -59,6 +59,12 @@ export class LocationService {
     }));
   }
 
+  deleteLocation(adminKey: string, locationId: number): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`${this.apiUrl}/api/locations/${locationId}`, {
+      headers: { 'X-Admin-Key': adminKey }
+    }));
+  }
+
   getHeadlines(): Promise<Headline[]> {
     return firstValueFrom(this.http.get<Headline[]>(`${this.apiUrl}/api/headlines`));
   }

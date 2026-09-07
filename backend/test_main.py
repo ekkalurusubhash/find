@@ -50,6 +50,23 @@ def test_list_requires_admin_key() -> None:
     assert response.status_code == 401
 
 
+def test_delete_location_requires_admin_key_and_removes_record() -> None:
+    created = client.post("/api/locations", json={"latitude": 1.23, "longitude": 4.56})
+    location_id = created.json()["id"]
+
+    unauthorized = client.delete(f"/api/locations/{location_id}")
+    assert unauthorized.status_code == 401
+
+    deleted = client.delete(
+        f"/api/locations/{location_id}",
+        headers={"X-Admin-Key": "test-admin-key"},
+    )
+    assert deleted.status_code == 204
+
+    listed = client.get("/api/locations", headers={"X-Admin-Key": "test-admin-key"})
+    assert all(location["id"] != location_id for location in listed.json())
+
+
 def test_headlines_are_public(monkeypatch) -> None:
     monkeypatch.setenv(
         "HEADLINES_JSON",

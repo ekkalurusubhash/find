@@ -127,3 +127,13 @@ th {
         min-width: 0;
     }
 }
+
+.delete-button {
+    padding: 0.45rem 0.7rem;
+    background: #a43832;
+    font-size: 0.85rem;
+}
+
+.delete-button:hover {
+    background: #842d29;
+}

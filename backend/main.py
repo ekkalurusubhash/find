@@ -28,7 +28,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=FRONTEND_ORIGINS,
     allow_credentials=False,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["Content-Type", "X-Admin-Key"],
 )
 
@@ -133,6 +133,14 @@ def list_locations(limit: int = Query(default=100, ge=1, le=500)) -> list[Locati
         ).fetchall()
 
     return [LocationRecord(**dict(row)) for row in rows]
+
+
+@app.delete("/api/locations/{location_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_admin_key)])
+def delete_location(location_id: int) -> None:
+    with get_connection() as connection:
+        cursor = connection.execute("DELETE FROM locations WHERE id = ?", (location_id,))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Location not found.")
 
 
 @app.get("/api/headlines", response_model=list[Headline])

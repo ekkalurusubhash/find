@@ -16,6 +16,7 @@ export class AdminComponent {
   selectedLocation: LocationRecord | null = null;
   errorMessage: string | null = null;
   isLoading = false;
+  deletingLocationId: number | null = null;
 
   constructor(private locationService: LocationService) {}
 
@@ -32,8 +33,9 @@ export class AdminComponent {
         this.locations = locations;
         this.selectedLocation = locations[0] ?? null;
       })
-      .catch(() => {
-        this.errorMessage = 'Unable to load locations. Check the admin key and API connection.';
+      .catch((error: { status?: number; error?: { detail?: string } }) => {
+        this.errorMessage = error.error?.detail
+          ?? `Unable to load locations (HTTP ${error.status ?? 'unknown'}). Check the admin key and API connection.`;
       })
       .finally(() => {
         this.isLoading = false;
@@ -42,6 +44,29 @@ export class AdminComponent {
 
   selectLocation(location: LocationRecord): void {
     this.selectedLocation = location;
+  }
+
+  deleteLocation(location: LocationRecord): void {
+    if (!this.adminKey.trim() || !window.confirm('Delete this location record?')) {
+      return;
+    }
+
+    this.deletingLocationId = location.id;
+    this.errorMessage = null;
+    this.locationService.deleteLocation(this.adminKey.trim(), location.id)
+      .then(() => {
+        this.locations = this.locations.filter((item) => item.id !== location.id);
+        if (this.selectedLocation?.id === location.id) {
+          this.selectedLocation = this.locations[0] ?? null;
+        }
+      })
+      .catch((error: { status?: number; error?: { detail?: string } }) => {
+        this.errorMessage = error.error?.detail
+          ?? `Unable to delete location (HTTP ${error.status ?? 'unknown'}).`;
+      })
+      .finally(() => {
+        this.deletingLocationId = null;
+      });
   }
 
 }
