@@ -35,6 +35,19 @@ def test_local_origin_preflight_is_allowed() -> None:
     assert response.headers["access-control-allow-origin"] == "http://localhost:4200"
 
 
+def test_delete_preflight_is_allowed() -> None:
+    response = client.options(
+        "/api/locations/1",
+        headers={
+            "Origin": "https://ekkalurusubhash.github.io",
+            "Access-Control-Request-Method": "DELETE",
+            "Access-Control-Request-Headers": "x-admin-key",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "https://ekkalurusubhash.github.io"
+
+
 def test_create_and_list_location() -> None:
     created = client.post("/api/locations", json={"latitude": 12.34, "longitude": 56.78})
     assert created.status_code == 201

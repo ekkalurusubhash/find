@@ -17,7 +17,7 @@ DEFAULT_FRONTEND_ORIGINS = [
     "https://ekkalurusubhash.github.io",
 ]
 CONFIGURED_FRONTEND_ORIGINS = [
-    origin.strip()
+    origin.strip().strip('"\'').rstrip("/")
     for origin in os.getenv("FRONTEND_ORIGINS", "").split(",")
     if origin.strip()
 ]
