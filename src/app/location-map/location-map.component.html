@@ -1,0 +1,8 @@
+<section class="map-panel" aria-label="Map showing your current location">
+    <div class="map-heading">
+        <h2>Current location map</h2>
+        <a [href]="'https://www.openstreetmap.org/?mlat=' + latitude + '&mlon=' + longitude + '#map=16/' + latitude + '/' + longitude" target="_blank" rel="noopener">Open larger map</a>
+    </div>
+    <iframe [src]="mapUrl" title="OpenStreetMap showing your current location" loading="lazy">
+  </iframe>
+</section>

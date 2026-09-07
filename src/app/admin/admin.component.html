@@ -1,0 +1,43 @@
+<main class="admin-container">
+    <a class="back-link" href="/">Back to location sharing</a>
+    <p class="eyebrow">Admin dashboard</p>
+    <h1>Shared locations</h1>
+    <p class="intro">Enter the API key configured on the FastAPI server to view recent location updates.</p>
+
+    <form class="key-form" (submit)="$event.preventDefault(); loadLocations()">
+        <label for="admin-key">Admin API key</label>
+        <input id="admin-key" name="adminKey" type="password" [(ngModel)]="adminKey" autocomplete="off" />
+        <button type="submit" [disabled]="isLoading">{{ isLoading ? 'Loading...' : 'Load locations' }}</button>
+    </form>
+
+    @if (errorMessage) {
+    <p class="error-message" aria-live="polite">{{ errorMessage }}</p>
+    } @if (latestLocation) {
+    <app-location-map [latitude]="latestLocation.latitude" [longitude]="latestLocation.longitude" /> } @if (locations.length > 0) {
+    <section class="records" aria-label="Recent location records">
+        <h2>Recent updates</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Latitude</th>
+                        <th>Longitude</th>
+                        <th>Received</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (location of locations; track location.id) {
+                    <tr>
+                        <td>{{ location.latitude | number:'1.6-6' }}</td>
+                        <td>{{ location.longitude | number:'1.6-6' }}</td>
+                        <td>{{ location.created_at | date:'medium' }}</td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+    } @else if (!isLoading && !errorMessage) {
+    <p class="empty-state">No location updates have been received yet.</p>
+    }
+</main>

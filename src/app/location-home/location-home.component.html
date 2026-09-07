@@ -1,0 +1,31 @@
+<div class="location-container">
+    <header class="page-header">
+        <p class="eyebrow">Location dashboard</p>
+        <h1>Your current location</h1>
+        <p class="intro">Allow location access to see your position on the map.</p>
+    </header>
+
+    @if (latitude !== null && longitude !== null) {
+    <section class="location-summary" aria-label="Current coordinates">
+        <div>
+            <span>Latitude</span>
+            <strong>{{ latitude | number:'1.6-6' }}</strong>
+        </div>
+        <div>
+            <span>Longitude</span>
+            <strong>{{ longitude | number:'1.6-6' }}</strong>
+        </div>
+        <button type="button" (click)="getCurrentLocation()">Refresh location</button>
+    </section>
+
+    <app-location-map [latitude]="latitude" [longitude]="longitude" /> } @else {
+    <section class="location-state" aria-live="polite">
+        @if (isLoading) {
+        <p>Requesting your location...</p>
+        } @else if (errorMessage) {
+        <p class="error-message">{{ errorMessage }}</p>
+        <button type="button" (click)="getCurrentLocation()">Try again</button>
+        <small>Location access works when this site is served over HTTPS.</small> }
+    </section>
+    }
+</div>
