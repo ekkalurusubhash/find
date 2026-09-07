@@ -10,14 +10,17 @@ from pydantic import BaseModel, Field
 
 DATABASE_PATH = Path(os.getenv("LOCATION_DATABASE", "locations.db"))
 ADMIN_API_KEY = os.getenv("ADMIN_API_KEY")
-FRONTEND_ORIGINS = [
+DEFAULT_FRONTEND_ORIGINS = [
+    "http://localhost:4200",
+    "http://127.0.0.1:4200",
+    "https://ekkalurusubhash.github.io",
+]
+CONFIGURED_FRONTEND_ORIGINS = [
     origin.strip()
-    for origin in os.getenv(
-        "FRONTEND_ORIGINS",
-        "http://localhost:4200,http://127.0.0.1:4200",
-    ).split(",")
+    for origin in os.getenv("FRONTEND_ORIGINS", "").split(",")
     if origin.strip()
 ]
+FRONTEND_ORIGINS = list(dict.fromkeys(DEFAULT_FRONTEND_ORIGINS + CONFIGURED_FRONTEND_ORIGINS))
 
 app = FastAPI(title="Location API", version="1.0.0")
 app.add_middleware(
@@ -83,6 +86,16 @@ def require_admin_key(x_admin_key: str | None = Header(default=None)) -> None:
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/")
+def root() -> dict[str, str]:
+    return {
+        "name": "Location API",
+        "status": "ok",
+        "docs": "/docs",
+        "health": "/health",
+    }
 
 
 @app.post("/api/locations", response_model=LocationRecord, status_code=status.HTTP_201_CREATED)

@@ -16,6 +16,25 @@ def test_health() -> None:
     assert response.json() == {"status": "ok"}
 
 
+def test_root() -> None:
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.json()["name"] == "Location API"
+
+
+def test_local_origin_preflight_is_allowed() -> None:
+    response = client.options(
+        "/api/locations",
+        headers={
+            "Origin": "http://localhost:4200",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://localhost:4200"
+
+
 def test_create_and_list_location() -> None:
     created = client.post("/api/locations", json={"latitude": 12.34, "longitude": 56.78})
     assert created.status_code == 201

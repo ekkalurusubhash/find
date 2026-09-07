@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface LocationRecord {
   id: number;
@@ -13,7 +14,7 @@ export interface LocationRecord {
   providedIn: 'root'
 })
 export class LocationService {
-  private readonly apiUrl = 'http://localhost:8000';
+  private readonly apiUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
