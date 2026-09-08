@@ -15,11 +15,16 @@ from sqlalchemy import create_engine, inspect, text
 
 
 DATABASE_PATH = Path(os.getenv("LOCATION_DATABASE", "locations.db"))
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip() or None
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
 elif DATABASE_URL and DATABASE_URL.startswith("postgresql://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+elif DATABASE_URL and not DATABASE_URL.startswith("postgresql+psycopg://"):
+    raise RuntimeError(
+        "DATABASE_URL must be the complete PostgreSQL connection URL from Render, "
+        "starting with postgres://, postgresql://, or postgresql+psycopg://."
+    )
 ID_DEFINITION = "SERIAL PRIMARY KEY" if DATABASE_URL else "INTEGER PRIMARY KEY AUTOINCREMENT"
 DATABASE_ENGINE = create_engine(
     DATABASE_URL or f"sqlite:///{DATABASE_PATH}",
