@@ -96,7 +96,7 @@ def initialize_database() -> None:
             """.format(ID_DEFINITION=ID_DEFINITION)
             )
         )
-        columns = {column["name"] for column in inspect(DATABASE_ENGINE).get_columns("locations")}
+        columns = {column["name"] for column in inspect(connection).get_columns("locations")}
         if "client_id" not in columns:
             connection.execute(text("ALTER TABLE locations ADD COLUMN client_id VARCHAR(100)"))
         if "status" not in columns:
