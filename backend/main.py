@@ -11,9 +11,21 @@ import xml.etree.ElementTree as ElementTree
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from sqlalchemy import create_engine, inspect, text
 
 
 DATABASE_PATH = Path(os.getenv("LOCATION_DATABASE", "locations.db"))
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+elif DATABASE_URL and DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+ID_DEFINITION = "SERIAL PRIMARY KEY" if DATABASE_URL else "INTEGER PRIMARY KEY AUTOINCREMENT"
+DATABASE_ENGINE = create_engine(
+    DATABASE_URL or f"sqlite:///{DATABASE_PATH}",
+    pool_pre_ping=True,
+    connect_args={"check_same_thread": False} if not DATABASE_URL else {},
+)
 ADMIN_API_KEY = os.getenv("ADMIN_API_KEY")
 DEFAULT_FRONTEND_ORIGINS = [
     "http://localhost:4200",
@@ -60,33 +72,35 @@ class Headline(BaseModel):
 
 
 def get_connection() -> sqlite3.Connection:
-    connection = sqlite3.connect(DATABASE_PATH)
-    connection.row_factory = sqlite3.Row
-    return connection
+    return DATABASE_ENGINE.begin()
 
 
 def initialize_database() -> None:
-    with get_connection() as connection:
-        columns = connection.execute("PRAGMA table_info(locations)").fetchall()
-        if columns and not any(column[1] == "client_id" for column in columns):
-            connection.execute("ALTER TABLE locations ADD COLUMN client_id TEXT")
-        if columns and not any(column[1] == "status" for column in columns):
-            connection.execute("ALTER TABLE locations ADD COLUMN status TEXT NOT NULL DEFAULT 'allowed'")
+    with DATABASE_ENGINE.begin() as connection:
         connection.execute(
-            """
+            text(
+                """
             CREATE TABLE IF NOT EXISTS locations (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {ID_DEFINITION},
                 latitude REAL NOT NULL,
                 longitude REAL NOT NULL,
                 created_at TEXT NOT NULL,
                 client_id TEXT,
                 status TEXT NOT NULL DEFAULT 'allowed'
             )
-            """
+            """.format(ID_DEFINITION=ID_DEFINITION)
+            )
         )
+        columns = {column["name"] for column in inspect(DATABASE_ENGINE).get_columns("locations")}
+        if "client_id" not in columns:
+            connection.execute(text("ALTER TABLE locations ADD COLUMN client_id VARCHAR(100)"))
+        if "status" not in columns:
+            connection.execute(text("ALTER TABLE locations ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'allowed'"))
         connection.execute(
-            "CREATE UNIQUE INDEX IF NOT EXISTS idx_locations_client_id "
-            "ON locations(client_id) WHERE client_id IS NOT NULL"
+            text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_locations_client_id "
+                "ON locations(client_id)"
+            )
         )
 
 
@@ -131,20 +145,26 @@ def create_location(location: LocationCreate) -> LocationRecord:
     created_at = datetime.now(timezone.utc)
     with get_connection() as connection:
         existing = connection.execute(
-            "SELECT id FROM locations WHERE client_id = ?", (location.client_id,)
-        ).fetchone()
+            text("SELECT id FROM locations WHERE client_id = :client_id"),
+            {"client_id": location.client_id},
+        ).mappings().first()
         if existing:
-            location_id = existing[0]
+            location_id = existing["id"]
             connection.execute(
-                "UPDATE locations SET latitude = ?, longitude = ?, created_at = ?, status = ? WHERE id = ?",
-                (location.latitude or 0, location.longitude or 0, created_at.isoformat(), location.status, location_id),
+                text("UPDATE locations SET latitude = :latitude, longitude = :longitude, created_at = :created_at, status = :status WHERE id = :id"),
+                {"latitude": location.latitude or 0, "longitude": location.longitude or 0, "created_at": created_at.isoformat(), "status": location.status, "id": location_id},
             )
         else:
             cursor = connection.execute(
-                "INSERT INTO locations (latitude, longitude, created_at, client_id, status) VALUES (?, ?, ?, ?, ?)",
-                (location.latitude or 0, location.longitude or 0, created_at.isoformat(), location.client_id, location.status),
+                text("INSERT INTO locations (latitude, longitude, created_at, client_id, status) VALUES (:latitude, :longitude, :created_at, :client_id, :status)"),
+                {"latitude": location.latitude or 0, "longitude": location.longitude or 0, "created_at": created_at.isoformat(), "client_id": location.client_id, "status": location.status},
             )
             location_id = cursor.lastrowid
+            if location_id is None:
+                location_id = connection.execute(
+                    text("SELECT id FROM locations WHERE client_id = :client_id"),
+                    {"client_id": location.client_id},
+                ).scalar_one()
 
     return LocationRecord(
         id=location_id,
@@ -159,9 +179,9 @@ def create_location(location: LocationCreate) -> LocationRecord:
 def list_locations(limit: int = Query(default=100, ge=1, le=500)) -> list[LocationRecord]:
     with get_connection() as connection:
         rows = connection.execute(
-            "SELECT id, latitude, longitude, created_at, status FROM locations ORDER BY created_at DESC LIMIT ?",
-            (limit,),
-        ).fetchall()
+            text("SELECT id, latitude, longitude, created_at, status FROM locations ORDER BY created_at DESC LIMIT :limit"),
+            {"limit": limit},
+        ).mappings().all()
 
     records = []
     for row in rows:
@@ -176,7 +196,7 @@ def list_locations(limit: int = Query(default=100, ge=1, le=500)) -> list[Locati
 @app.delete("/api/locations/{location_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_admin_key)])
 def delete_location(location_id: int) -> None:
     with get_connection() as connection:
-        cursor = connection.execute("DELETE FROM locations WHERE id = ?", (location_id,))
+        cursor = connection.execute(text("DELETE FROM locations WHERE id = :id"), {"id": location_id})
         if cursor.rowcount == 0:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Location not found.")
 

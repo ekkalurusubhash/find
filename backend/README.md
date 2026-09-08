@@ -31,6 +31,17 @@ FRONTEND_ORIGINS=http://localhost:4200,http://127.0.0.1:4200,https://ekkalurusub
 HEADLINES_JSON=[{"title":"A new local story","source":"Local desk","url":"https://example.com/story","published_at":"2026-09-07T10:00:00+00:00"}]
 ```
 
-The default SQLite database is `locations.db`. Set `LOCATION_DATABASE` to a
-persistent path when deploying the API. The admin API key must be kept only on
-the server; do not put it in the Angular source code.
+Local development uses the SQLite database `locations.db`. For Render, create
+a managed PostgreSQL database and add its internal connection string as the
+`DATABASE_URL` environment variable. The API automatically uses PostgreSQL
+when `DATABASE_URL` is present and SQLite otherwise. This keeps location data
+across deploys and restarts.
+
+On Render, add:
+
+```text
+DATABASE_URL=the-internal-PostgreSQL-connection-string
+```
+
+Do not commit or expose `DATABASE_URL`; the admin API key must also remain only
+on the server.

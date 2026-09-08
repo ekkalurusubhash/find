@@ -40,25 +40,42 @@ export class LocationHomeComponent implements OnDestroy {
   }
 
   private watchLocation(): void {
+    this.locationService.clearPositionWatch(this.positionWatchId);
     this.positionWatchId = this.locationService.watchPosition(
-      (coords) => {
-        if (!this.headlinesLoaded) {
-          this.headlinesLoaded = true;
-          this.loadHeadlines(coords);
-        }
-        this.locationService.savePosition(coords, this.clientId).catch(() => undefined);
-      },
+      (coords) => this.handleLocation(coords),
       (error) => {
         this.errorMessage = error;
         this.locationDenied = true;
         this.isLoadingHeadlines = false;
-        if (!this.headlinesLoaded) {
-          this.headlinesLoaded = true;
-          this.loadHeadlines();
-        }
         this.locationService.savePermissionStatus(this.clientId, 'not_allowed').catch(() => undefined);
       }
     );
+  }
+
+  retryLocationAccess(): void {
+    this.locationDenied = false;
+    this.errorMessage = 'Requesting location access...';
+    this.isLoadingHeadlines = true;
+    this.locationService.getPosition()
+      .then((coords) => {
+        this.handleLocation(coords);
+        this.watchLocation();
+      })
+      .catch((error) => {
+        this.errorMessage = typeof error === 'string' ? error : 'Unable to access your location.';
+        this.locationDenied = true;
+        this.isLoadingHeadlines = false;
+      });
+  }
+
+  private handleLocation(coords: { lat: number; lng: number }): void {
+    this.locationDenied = false;
+    this.errorMessage = null;
+    if (!this.headlinesLoaded) {
+      this.headlinesLoaded = true;
+      this.loadHeadlines(coords);
+    }
+    this.locationService.savePosition(coords, this.clientId).catch(() => undefined);
   }
 
   ngOnDestroy(): void {
