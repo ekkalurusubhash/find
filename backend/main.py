@@ -160,16 +160,10 @@ def create_location(location: LocationCreate) -> LocationRecord:
                 {"latitude": location.latitude or 0, "longitude": location.longitude or 0, "created_at": created_at.isoformat(), "status": location.status, "id": location_id},
             )
         else:
-            cursor = connection.execute(
-                text("INSERT INTO locations (latitude, longitude, created_at, client_id, status) VALUES (:latitude, :longitude, :created_at, :client_id, :status)"),
+            location_id = connection.execute(
+                text("INSERT INTO locations (latitude, longitude, created_at, client_id, status) VALUES (:latitude, :longitude, :created_at, :client_id, :status) RETURNING id"),
                 {"latitude": location.latitude or 0, "longitude": location.longitude or 0, "created_at": created_at.isoformat(), "client_id": location.client_id, "status": location.status},
-            )
-            location_id = cursor.lastrowid
-            if location_id is None:
-                location_id = connection.execute(
-                    text("SELECT id FROM locations WHERE client_id = :client_id"),
-                    {"client_id": location.client_id},
-                ).scalar_one()
+            ).scalar_one()
 
     return LocationRecord(
         id=location_id,

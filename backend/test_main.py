@@ -98,6 +98,16 @@ def test_location_updates_existing_client_record() -> None:
     assert matching[0]["longitude"] == 21
 
 
+def test_new_location_returns_generated_id() -> None:
+    response = client.post(
+        "/api/locations",
+        json={"latitude": 30, "longitude": 40, "client_id": "returning-client"},
+    )
+
+    assert response.status_code == 200
+    assert isinstance(response.json()["id"], int)
+
+
 def test_not_allowed_location_is_listed_without_coordinates() -> None:
     response = client.post(
         "/api/locations",
